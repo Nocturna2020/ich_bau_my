@@ -1,0 +1,65 @@
+{% extends 'site_base.html' %}
+
+{% load bootstrap %}
+
+{% block body_class %}link{% endblock %}
+
+{% block head_title %}
+{% if link.pk %}
+Edit link
+{% else %}
+Create link
+{% endif %}
+
+{% endblock %}
+
+{% block body %}
+<div class="row">
+<div class="col-md-9">
+
+                {% if link.pk %}
+                    <h2>Edit link</h2>
+                {% else %}
+                    <h2>Add link to <a href="{{main_task.get_absolute_url}}">{{main_task}}</a></h2>
+                {% endif %}
+
+<div class="row">
+        <div class="col-md-5">
+
+    <form action="" method="get">
+        {{ task_filter.form|bootstrap }}
+        <input type="submit" class="btn btn-info" />
+    </form>
+</div>
+</div>
+
+{% if task_filter.qs.count %}
+        {{ form.media }}
+        <form class="span6" id="link_form" method="post" action="" enctype="multipart/form-data">
+
+                {% if link.pk %}
+                    <legend>Edit link</legend>
+                {% else %}
+                    <legend>Add link to {{main_task}}</legend>
+                {% endif %}
+
+            {% csrf_token %}
+            {% for hidden in form.hidden_fields %}
+                {{ hidden }}
+            {% endfor %}
+
+            {% for field in form.visible_fields %}
+
+                {{ field|bootstrap }}
+            {% endfor %}
+
+
+            <button class="btn btn-primary" type="submit" name="submit">Save</button>
+        </form>
+{% else %}
+    <p>No tasks found.</p>
+{% endif %}
+
+</div>
+</div>
+{% endblock %}

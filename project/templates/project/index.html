@@ -1,0 +1,85 @@
+{% extends "site_base.html" %}
+
+{% block head_title %}Project{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-md-12">
+
+<h1>Projects 
+{% if can_add_project %}
+<a class="btn btn-default" href="/project/project_add/"><i class="fa fa-plus"></i>Create project</a>
+{%endif%}
+</h1>
+
+<ul class="nav nav-tabs">
+  <li role="presentation" {% if filter_type == '' %} class="active" {% endif %}><a href="/project/">Mine</a></li>
+  <li role="presentation" {% if filter_type == 'all_available' %} class="active" {% endif %}><a href="/project/all_available">Available</a></li>
+  <li role="presentation" {% if filter_type == 'search_public' %} class="active" {% endif %}><a href="/project/search_public/">Search public</a></li>
+  <li role="presentation" {% if filter_type == 'all_public' %} class="active" {% endif %}><a href="/project/all_public/">All public</a></li>
+  <li role="presentation" {% if filter_type == 'task_search' %} class="active" {% endif %}><a href="/project/task_search/">Task search</a></li>
+</ul>
+
+<p></p>
+
+{% if filter_type == 'search_public' %}
+{% load bootstrap %}
+    <div class="row">
+        <div class="col-md-5">
+
+    <form action="" method="get">
+        {{ filter.form|bootstrap }}
+        <input type="submit" class="btn btn-info" />
+    </form>
+    </div>
+    </div>
+    <br>
+    {% for obj in filter.qs %}
+        <a href="{{ obj.get_absolute_url }}">{{ obj.fullname }}</a><br />
+    {% endfor %}
+    <p>{{filter.qs.count}} found.</p>
+
+{% else %}
+
+{% if filter_type == '' and not request.user.is_authenticated %}
+
+Please, log in to see your projects.
+
+{% else %}
+
+{% if filter_type == 'task_search' %}
+    <div class="row">
+        <div class="col-md-5">
+
+    <form action="" method="get">
+        {{ filter.form|bootstrap }}
+        <input type="submit" class="btn btn-info" />
+    </form>
+    </div>
+    </div>
+    <h2>Search for tasks</h2>
+    {% include "project/task_list.html" with table_mode='index' %}
+{% else %}
+    {% include "project/project_list.html" %}
+{% endif %}
+
+
+{% endif %}
+
+{% endif %}
+
+{% if filter_type == '' %}
+
+<h3>Tasks assigned to you</h3>
+
+{% if not request.user.is_authenticated %}
+Please, log in to see your tasks.
+{% else %}
+{% include "project/task_list.html" with table_mode='index' %}
+{% endif %}
+{% endif %}
+
+        </div>
+    </div>
+
+{% endblock %}

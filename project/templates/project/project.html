@@ -1,0 +1,165 @@
+{% extends 'site_base.html' %}
+
+{% load i18n %}
+{% load bootstrap %}
+{% load thumbnail %}
+{% load template_arithmetic_tag %}
+
+{% block head_title %}{{project}}{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-md-12">
+<h1>{{project}}
+{% if not project.is_project_visible %}
+<i class="fa fa-lock"></i>
+{% endif %}
+
+{% if not project.active_flag %}
+   <span class="label label-primary">Closed</span>
+{% endif %}
+
+</h1>
+
+<ul class="nav nav-tabs">
+  <li role="presentation" {% if show_page == 'title' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}">{% trans "Project" %}</a></li>
+  <li role="presentation" {% if show_page == 'members' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}members/">{% trans "Members" %}</a></li>
+  <li role="presentation" {% if show_page == 'last_actions' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}last_actions/">{% trans "Last activities" %}</a></li>
+
+  {% if show_file_page %}
+    <li role="presentation" {% if show_page == 'files' %} class="active" {% endif %}><a href="{% url 'project:project_view_files' project_id=project.pk %}">{% trans "Files" %}</a></li>
+  {% endif %}
+  <li role="presentation" {% if show_page == 'milestones' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}milestones/">{% trans "Milestones" %}</a></li>
+</ul>
+
+{% if show_page == 'title' %}
+
+<p>Project description</p>
+
+{% if project.description %}
+{{ project.description_html|safe }}
+{% endif %}
+
+{% if user_can_admin %}
+<a class="btn btn-default" href="{{project.get_absolute_url}}project_edit"><i class="fa fa-pencil-square-o"></i> {% trans "Edit project" %}</a>
+{% endif %}
+
+{% if project.created_at == project.modified_at %}
+no history to view
+
+{% else %}
+<a href="{{project.get_absolute_url}}history">History</a>
+{% endif %}
+
+<h2>{% trans "Tasks" %} {% if user_can_admin or user_can_work %}<a class="btn btn-default" href="/project/task_add/{{project.id}}/"><i class="fa fa-plus"></i> {% trans "Create task" %}</a>{% endif %}</h2>
+
+<ul class="nav nav-tabs">
+  <li role="presentation" {% if filter_type == '' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}">{% trans "Open" %}</a></li>
+  <li role="presentation" {% if filter_type == 'filter_task_closed' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}closed_task/">{% trans "Closed" %}</a></li>
+  <li role="presentation" {% if filter_type == 'filter_task_assigned' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}assigned_task/">{% trans "Assigned" %}</a></li>
+  <li role="presentation" {% if filter_type == 'filter_task_unassigned' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}unassigned_task/">{% trans "Unassigned" %}</a></li>
+  <li role="presentation" {% if filter_type == 'filter_task_by_domain' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}task_by_domain/">{% trans "Domain" %}</a></li>
+  <li role="presentation" {% if filter_type == 'filter_task_search' %} class="active" {% endif %}><a href="{{project.get_absolute_url}}search_task/">{% trans "Search" %}</a></li>
+</ul>
+
+{% if filter_type == 'filter_task_search' %}
+    <div class="row">
+        <div class="col-md-5">
+
+    <form action="" method="get">
+        {{ filter.form|bootstrap }}
+        <input type="submit" class="btn btn-info" />
+    </form>
+    </div>
+    </div>
+{% else %}
+    {% if filter_type == 'filter_task_by_domain' %}
+        {% load mptt_tags %}
+
+        <div class="row">
+
+            <ul class="list-group">
+                {% recursetree domains %}
+                    <li class="list-group-item" >
+                    {% if node.pk == selected_domain %}<strong>{% endif %}
+                    <a href="{% url 'project:project_view_task_for_domain' project.pk node.pk %}">{{node.name}}</a>
+
+
+                    {% if node.pk == selected_domain %}</strong>{% endif %}
+
+                        {% if not node.is_leaf_node %}
+                            <ul class="list-group">
+                            {{ children }}
+                            </ul>
+                        {% endif %}
+                    </li>
+                {% endrecursetree %}
+            </ul>
+
+        </div>
+    {% endif %}
+
+{% endif %}
+
+{% include "project/task_list.html" with table_mode='project' %}
+
+{% comment %} end if TITLE {% endcomment %}
+{% endif %}
+
+{% if show_page == 'members' %}
+
+<h2>{% trans "Members" %} {% if user_can_admin %}<a class="btn btn-default" href="/project/member_add/{{project.id}}/"><i class="fa fa-plus"></i> {% trans "Add member" %}</a>{% endif %}</h2>
+
+{% include "project/project_members_list.html" %}
+{% endif %}
+
+{% if show_page == 'last_actions' %}
+
+<h2>{% trans "Recent project activity" %}</h2>
+
+<table class="table table-striped">
+<thead>
+<tr>
+    <th>Date time</th>
+    <th>User</th>
+    <th>Comment</th>
+    <th>Task</th>
+</tr>
+</thead>
+
+<tbody>
+    {% for c in last_actions %}
+        <tr>
+            <td>{{c.modified_at}}</td>
+            <td>{{c.modified_user}}</td>
+            <td>{{c.comment|safe|truncatewords_html:12}}</td>
+            <td><a href="{{c.parenttask.get_absolute_url}}">{{c.parenttask}}</a></td>
+        </tr>
+    {%endfor%}
+</tbody>
+</table>
+
+{% endif %}
+
+
+{% if show_page == 'files' %}
+<h2>Files</h2>
+
+{% include "project/project_repo.html" %}
+
+
+{% comment %} end if FILES {% endcomment %}
+{% endif %}
+
+{% if show_page == 'milestones' %}
+<h2>{% trans "Milestones" %}{% if user_can_admin %} <a class="btn btn-default" href="/project/milestone_add/{{project.id}}/"><i class="fa fa-plus"></i> {% trans "Create milestone" %}</a>{% endif %}</h2>
+
+{% include "project/project_milestones.html" %}
+
+{% comment %} end if MILESTONES {% endcomment %}
+{% endif %}
+
+</div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "site_base.html" %}
+
+{% block head_title %}CRM{% endblock %}
+
+{% load thumbnail %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-md-12">
+            <h1>Contracts  <a class="btn btn-default" href="/crm/contract_add/"><i class="fa fa-plus"></i>Create contract</a></h1>
+        </div>
+    </div>
+    <div class="row">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Contracts</th>
+                    <th>Start date</th>
+                    <th>End date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contract in contracts %}
+                <tr>
+                    <td><a href="{{contract.get_absolute_url}}">{{contract}}</a></td>
+                    <td>{{contract.start_date|date}}</td>
+                    <td>{{contract.end_date|date}}</td>
+                </tr>
+                {% endfor %}        
+            </tbody>            
+        </table>
+    </div>
+{% endblock %}

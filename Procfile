@@ -1,0 +1,1 @@
+web: gunicorn ich_bau.wsgi

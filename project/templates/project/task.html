@@ -1,0 +1,253 @@
+{% extends 'site_base.html' %}
+
+{% load bootstrap %}
+{% load thumbnail %}
+{% load profile_tag %}
+
+{% block head_title %}{{task}}{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-md-12">
+
+<div class="panel panel-default">
+
+<ol class="breadcrumb">
+<li>  <a href="{% url 'project:index' %}">Projects</a></li></li>
+<li>  <a href="{{ task.project.get_absolute_url }}">{{ task.project }}</a></li>
+{% if task.milestone %}<li> <a href="{{task.milestone.get_absolute_url}}">{{task.milestone}}</a> </li>{% endif %}
+</ol>
+
+  <div class="panel-heading"><strong>{{task}}
+
+   {% if task.kind %}
+   ({{ task.kind }})
+   {% endif %}
+  </strong>
+  {% if task.important %}
+    <i class="fa fa-exclamation-triangle" style="color:red"></i>
+    {% endif %}
+
+
+   {% if task.milestone %} targeted to <a href="{{task.milestone.get_absolute_url}}">{{task.milestone}}</a> milestone {% endif %}
+
+   {% if not task.get_opened %}
+   <span class="label label-primary">{{task.get_state_name}}</span>
+   {% endif %}
+  </div>
+
+  <div class="panel-body">
+  {% if task.description %}
+  <p>{{ task.description_html|safe }}</p>
+  {% endif %}
+
+  <td>{% if task.holder %}<p>Holder: <a href="{% url 'profiles_detail' pk=task.holder.id %}">{{task.holder}}</a></small></p></p>{% endif %}</td>
+
+  <p class="text-right">
+
+  {% if user_can_work and task.get_opened %}
+  <a class="btn btn-default" href="{{ task.get_absolute_url }}edit"><i class="fa fa-pencil-square-o"></i> Edit task</a>
+
+ {%comment%}
+  <a class="btn btn-default" href="{{ task.get_absolute_url }}edit_target_date"><i class="fa fa-clock-o"></i> Edit target date</a>
+ {%endcomment%}
+
+  {% endif %}
+{% if task.created_at == task.modified_at %}
+no history to view
+
+{% else %}
+<a href="{{task.get_absolute_url}}history">History</a>
+{% endif %}
+  <br>
+  <small>{{task.created_at}} by <a href="{% url 'profiles_detail' pk=task.created_user.profile.id %}">{{task.created_user}}</a></small></p>
+  </div>
+
+<ul class="list-group">
+<li class="list-group-item">
+  {% if maintasks %}
+  <p><i class="fa fa-arrow-up"> </i><strong>Main tasks</strong></p>
+  <ul>
+  {% for mt in maintasks %}
+  <li>{% if not mt.maintask.get_opened %}<strike>{% endif %}
+  <a href="{{mt.maintask.get_absolute_url}}">{{mt.maintask}}</a>
+  {% if not mt.maintask.get_opened %}</strike>{% endif %}
+  </li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if subtasks %}
+  <p><i class="fa fa-arrow-down"> </i><strong>Sub tasks</strong></p>
+  <ul>
+  {% for st in subtasks %}
+  <li>{% if not st.subtask.get_opened %}<strike>{% endif %}
+  <a href="{{st.subtask.get_absolute_url}}">{{st.subtask}}</a>
+  {% if not st.subtask.get_opened %}</strike>{% endif %}
+{% if user_can_work and task.get_opened %}
+ &nbsp;&nbsp;&nbsp; <a class="btn btn-default btn-xs" href="{{st.get_absolute_url}}unlink"  data-confirm="Unlink {{st.subtask}}?" >Unlink</a>
+{% endif %}
+  </li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+  {% if user.is_authenticated and user_can_work and task.get_opened %}
+<p class="text-right">
+  <a class="btn btn-default" href="/project/add_linked/{{task.id}}/"><i class="fa fa-plus"></i> Add sub task</a>
+</p>
+  {% endif %}
+
+  <p class="bg-warning">You can see linked tasks, only if it available for you.</p>
+</li>
+
+<li class="list-group-item">
+  <p><strong>Linked profiles</strong></p>
+  {% if profiles %}
+      {% regroup profiles by profile.profile_type as plist %}
+      <ul>
+        {% for pt in plist %}
+            <li>{% profile_type_name pt.grouper %}
+                <ul>
+                    {% for p in pt.list %}
+                    <li><a href="{% url 'profiles_detail' pk=p.profile.id %}">{{p.profile}}</a>
+                    {% if user_can_work and task.get_opened %}
+                        <div class="btn-group">
+                          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            {%if p.priority%}Responsible{%else%}Interested{%endif%} <span class="caret"></span>
+                          </button>
+                          <ul class="dropdown-menu">
+                            <li><a href="{% url 'project:switch_assign_responsibillty' p.pk %}">{%if p.priority%}Set interested{%else%}Set responsible{%endif%}</a></li>
+                          </ul>
+                        </div>
+                    {% else %}
+                        - {%if p.priority%}responsible{%else%}interested{%endif%}
+                    {% endif %}
+                    </li>
+
+                    {% endfor %}
+                </ul>
+            </li>
+        {% endfor %}
+      </ul>
+  {% endif %}
+
+  {% if user.is_authenticated and user_can_work and task.get_opened %}
+    <p class="text-right">
+        <a class="btn btn-default" href="/project/add_user/{{task.id}}/"><i class="fa fa-plus"></i> Assign user from members</a>
+        <a class="btn btn-default" href="/project/add_profile/{{task.id}}/"><i class="fa fa-plus"></i> Add profile</a>
+    </p>
+  {% endif %}
+
+</li>
+
+<li class="list-group-item">
+  <p><strong>Linked domains</strong></p>
+  {% if domains %}
+      <ul>
+          {% for d in domains %}
+            <li><a href="{% url 'project:project_view_task_for_domain' task.project.pk d.taskdomain.pk %}">{{d.taskdomain}}</a></li>
+          {% endfor %}
+      </ul>
+  {% endif %}
+
+  {% if user.is_authenticated and user_can_work and task.get_opened %}
+    <p class="text-right">
+        <a class="btn btn-default" href="/project/add_domain/{{task.id}}/"><i class="fa fa-plus"></i> Add domain</a>
+    </p>
+  {% endif %}
+</li>
+
+<li class="list-group-item"><p><strong>Check list</strong>
+
+              {% if user_can_work and task.get_opened %}
+                <a class="btn btn-default" href="{{task.get_absolute_url}}checklist">Edit check list</a>
+              {% endif %}
+
+</p>
+{% if task_checklist %}
+<ul>
+{% for check in task_checklist %}
+<li>{% if check.check_flag %}<strike>{%endif%}
+{{check}}
+{% if check.check_flag %}</strike>{%endif%}
+
+{% if user_can_work and task.get_opened %}
+ &nbsp;&nbsp;&nbsp; <a href="{{check.get_absolute_url}}switch"  data-confirm="Switch {{check}}?"> {% if check.check_flag %}Mark undone{% else %}Mark done{%endif%}</a>
+{% endif %}
+
+</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+</li>
+
+  <!-- List group -->
+{% if comments %}
+
+<li class="list-group-item"><strong>Comments:</strong></li>
+{% for c in comments %}
+<li class="list-group-item">
+<p>{{c.comment_html|safe}}</p>
+
+<p class="text-right">
+ {% ifequal c.created_user request.user %}
+ <a class="btn btn-default" href="{{ c.get_absolute_url }}edit"><i class="fa fa-pencil-square-o"></i> Edit comment</a>
+
+{% if c.created_at == c.modified_at %}
+{% else %}
+<a href="{{c.get_absolute_url}}history">History</a>
+{% endif %}
+
+  <br>
+ {% endifequal %}
+<small>{{c.created_at}} by <a href="{% url 'profiles_detail' pk=c.created_user.profile.pk %}">{{c.created_user}}</a></small></p>
+
+</li>
+{% endfor %}
+{% endif %}
+  </ul>
+</div>
+
+    {% if task_comment_form and user_can_comment%}
+
+{{ task_comment_form.media }}
+
+        <form class="span6" id="task_comment_form" method="post" action="" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for hidden in task_comment_form.hidden_fields %}
+                {{ hidden }}
+            {% endfor %}
+
+            {% for field in task_comment_form.visible_fields %}
+
+                {{ field|bootstrap }}
+            {% endfor %}
+
+            {% if task.get_opened %}
+            <button class="btn btn-primary" type="submit" name="submit">Post comment</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            {% if user_can_work %}
+            <button class="btn btn-warning" type="submit" name="submit_and_close">Close task</button>
+            {% endif %}
+            {% else %}
+              {% if user_can_work %}
+                <button class="btn btn-primary" type="submit" name="submit_and_reopen">Reopen task</button>
+              {% endif %}
+            {% endif %}
+        </form>
+
+    {% else %}
+        {% if not user.is_authenticated %}
+            <p class="bg-warning">Please, log in to post comments!</p>
+        {% endif %}
+
+    {% endif %}
+
+
+</div>
+</div>
+
+<small>This page was last modified on {{ task.modified_at }}</small>
+
+{% endblock %}
